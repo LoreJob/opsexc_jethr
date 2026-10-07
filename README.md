@@ -26,7 +26,7 @@ La versione pubblicabile usa la stessa interfaccia e lo stesso `converter.py`. I
 .venv/bin/python scripts/build_pages.py
 ```
 
-Il workflow `.github/workflows/pages.yml` ricrea `docs/` e pubblica il sito a ogni push su `main`. La repository deve essere pubblica se si usa GitHub Free. GitHub Pages serve file statici e non esegue il server Flask.
+GitHub Pages pubblica direttamente la cartella `docs/` del branch `main`. Dopo una modifica alla UI o al convertitore, rigenera `docs/` con il comando sopra e includi i file generati nel commit. GitHub Pages serve file statici e non esegue il server Flask.
 
 ## File di esempio
 
