@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#c5dda1">
+  <title>Conversione file</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body>
+  <div class="site-shell">
+    <header class="brand-header">
+      <img class="brand-logo" src="{{ url_for('static', filename='jet-hr-logo.svg') }}" alt="Jet HR" width="142" height="39">
+    </header>
+    <main class="app-main">
+      <div class="workspace">
+        <section class="panel form-panel" aria-labelledby="form-title">
+          <div class="panel-heading">
+            <span class="step-number">01</span>
+            <div><div class="section-kicker">NUOVA CONVERSIONE</div><h2 id="form-title">Dati in ingresso</h2></div>
+          </div>
+          <form id="conversion-form" novalidate>
+            <div class="field-row">
+              <div class="field">
+                <label for="provider">Provider</label>
+                <select id="provider" name="provider" required>
+                  <option value="" selected disabled>Seleziona provider</option>
+                  <option value="A" data-extension=".xlsx" data-company="4012">Provider A · Excel</option>
+                  <option value="B" data-extension=".csv" data-company="4027">Provider B · CSV</option>
+                  <option value="C" data-extension=".xls" data-company="4041">Provider C · Excel legacy</option>
+                  <option value="D" data-extension=".csv" data-company="4093">Provider D · CSV</option>
+                  <option value="E" data-extension=".xlsx" data-company="4131">Provider E · Excel</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="company">Codice ditta</label>
+                <input id="company" name="company" inputmode="numeric" autocomplete="off" maxlength="6" pattern="[0-9]{1,6}" placeholder="Es. 4012" required>
+                <small id="company-hint">Il codice nel gestionale paghe</small>
+              </div>
+            </div>
+            <div class="field">
+              <label for="period">Periodo del cedolino</label>
+              <input id="period" name="period" inputmode="numeric" autocomplete="off" maxlength="6" pattern="[0-9]{6}" value="202609" required>
+              <small>Formato AAAAMM · deve coincidere con il mese delle date nel file</small>
+            </div>
+            <div class="field upload-field">
+              <label for="file">File del provider</label>
+              <label class="dropzone" id="dropzone" for="file">
+                <input id="file" name="file" type="file" accept=".xlsx,.xls,.csv" required>
+                <span class="upload-icon" aria-hidden="true">↑</span>
+                <span class="upload-main" id="file-name">Scegli un file o trascinalo qui</span>
+                <span class="upload-sub" id="file-hint">Excel o CSV · massimo 10 MB</span>
+              </label>
+            </div>
+            <button class="primary-button" id="convert-button" type="submit"><span id="button-label">Converti il file</span><span aria-hidden="true">↗</span></button>
+          </form>
+        </section>
+
+        <section class="panel result-panel" aria-labelledby="result-title">
+          <div class="panel-heading">
+            <span class="step-number">02</span>
+            <div><div class="section-kicker">CONTROLLO &amp; DOWNLOAD</div><h2 id="result-title">Esito conversione</h2></div>
+          </div>
+          <div id="empty-result" class="empty-result">
+            <h3>Pronto a convertire</h3>
+            <p>Completa i dati a sinistra. Qui vedrai il riepilogo, le eventuali righe da verificare e il file da scaricare.</p>
+          </div>
+          <div id="error-result" class="error-result hidden" role="alert"></div>
+          <div id="conversion-result" class="conversion-result hidden" aria-live="polite">
+            <div id="status-banner" class="status-banner"></div>
+            <div class="metrics">
+              <div><strong id="input-count">0</strong><span>movimenti letti</span></div>
+              <div><strong id="converted-count">0</strong><span>convertiti</span></div>
+              <div><strong id="output-count">0</strong><span>righe nel TXT</span></div>
+            </div>
+            <div class="download-box">
+              <div class="download-icon" aria-hidden="true">TXT</div>
+              <div class="download-copy"><strong id="output-filename"></strong><span>Tracciato ASCII · 38 caratteri per record</span></div>
+              <button id="download-button" type="button" class="download-button">Scarica <span aria-hidden="true">↓</span></button>
+            </div>
+            <div id="warnings-section" class="issues-section warnings-section hidden">
+              <div class="issues-heading"><h3>Da verificare <span id="warnings-count"></span></h3></div>
+              <p class="warnings-note">Questi movimenti sono inclusi nel TXT con il codice della ditta selezionata.</p>
+              <div class="issues-table-wrap"><table><thead><tr><th>Riga</th><th>Dipendente</th><th>Segnalazione</th></tr></thead><tbody id="warnings-body"></tbody></table></div>
+            </div>
+            <div id="issues-section" class="issues-section hidden">
+              <div class="issues-heading"><h3>Righe con errori <span id="issues-count"></span></h3><button id="issues-download" type="button">Scarica scarti CSV ↓</button></div>
+              <div class="issues-table-wrap"><table><thead><tr><th>Riga</th><th>Dipendente</th><th>Problema</th></tr></thead><tbody id="issues-body"></tbody></table></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="process-note"><span class="note-symbol" aria-hidden="true">i</span><p><strong>Come funziona</strong> · I movimenti sono riconciliati con l’anagrafica e le voci welfare fornite. Gli importi vengono sommati per dipendente e voce. Le righe non riconciliabili sono sempre segnalate.</p></aside>
+    </main>
+  </div>
+</body>
+</html>
