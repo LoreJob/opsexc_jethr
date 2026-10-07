@@ -109,7 +109,9 @@ async function convertInBrowser(formData) {
   const file = formData.get('file');
   const data = await file.arrayBuffer();
   if (!browserWorker) {
-    browserWorker = new Worker(new URL('static/pyodide-worker.js', document.baseURI), {type: 'module'});
+    const workerUrl = new URL('static/pyodide-worker.js', document.baseURI);
+    if (window.APP_VERSION) workerUrl.searchParams.set('v', window.APP_VERSION);
+    browserWorker = new Worker(workerUrl, {type: 'module'});
   }
   return new Promise((resolve, reject) => {
     const worker = browserWorker;

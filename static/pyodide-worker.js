@@ -1,6 +1,7 @@
 import {loadPyodide} from 'https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.mjs';
 
 const siteRoot = new URL('../', self.location.href);
+const assetVersion = new URL(self.location.href).searchParams.get('v');
 let enginePromise;
 
 async function initializeEngine() {
@@ -19,7 +20,9 @@ await micropip.install(['openpyxl==3.1.5', 'xlrd==2.0.2'])
   ];
   pyodide.FS.mkdirTree('/app/Kit Candidato/config');
   await Promise.all(paths.map(async ([url, path]) => {
-    const response = await fetch(new URL(url, siteRoot));
+    const assetUrl = new URL(url, siteRoot);
+    if (assetVersion) assetUrl.searchParams.set('v', assetVersion);
+    const response = await fetch(assetUrl);
     if (!response.ok) throw new Error(`Impossibile caricare ${url}.`);
     pyodide.FS.writeFile(path, new Uint8Array(await response.arrayBuffer()));
   }));
