@@ -70,11 +70,18 @@ function renderRows(body, rows) {
   body.replaceChildren();
   for (const row of rows) {
     const tr = document.createElement('tr');
-    for (const value of [row.row, row.person, row.detail]) {
-      const td = document.createElement('td');
-      td.textContent = value;
-      tr.appendChild(td);
-    }
+    const number = document.createElement('td');
+    number.textContent = row.row;
+    const person = document.createElement('td');
+    person.className = 'issue-person';
+    const name = document.createElement('strong');
+    name.textContent = row.person;
+    const fiscalCode = document.createElement('small');
+    fiscalCode.textContent = `CF: ${row.fiscal_code}`;
+    person.append(name, fiscalCode);
+    const detail = document.createElement('td');
+    detail.textContent = row.detail;
+    tr.append(number, person, detail);
     body.appendChild(tr);
   }
 }
@@ -176,7 +183,7 @@ document.getElementById('download-button').addEventListener('click', () => {
 
 document.getElementById('issues-download').addEventListener('click', () => {
   if (!latestResult?.issues.length) return;
-  const rows = [['Riga', 'Dipendente', 'Problema'], ...latestResult.issues.map(issue => [issue.row, issue.person, issue.detail])];
+  const rows = [['Riga', 'Dipendente', 'Codice fiscale', 'Problema'], ...latestResult.issues.map(issue => [issue.row, issue.person, issue.fiscal_code, issue.detail])];
   const content = '\uFEFF' + rows.map(row => row.map(csvCell).join(';')).join('\r\n') + '\r\n';
   downloadBlob(content, latestResult.filename.replace('VOCI_', 'SCARTI_').replace('.txt', '.csv'), 'text/csv;charset=utf-8');
 });

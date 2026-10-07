@@ -146,6 +146,9 @@ th, td { padding: 9px 10px; vertical-align: top; }
 th { color: var(--ink-soft); font-weight: 700; }
 td { color: var(--ink-soft); border-top: 1px solid var(--line); }
 td:nth-child(1) { color: var(--ink); font-weight: 700; }
+.issue-person strong, .issue-person small { display: block; }
+.issue-person strong { color: var(--ink); font-weight: 700; }
+.issue-person small { margin-top: 3px; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
 
 .process-note { display: flex; gap: 12px; max-width: none; margin: 0; padding: 21px 38px 24px; color: var(--ink-soft); background: #f3f5f0; border-top: 1px solid var(--line); }
 .note-symbol { display: grid; place-items: center; flex: 0 0 auto; width: 19px; height: 19px; color: var(--ink); border: 1px solid #aeb8aa; border-radius: 50%; font-size: 11px; font-weight: 800; }

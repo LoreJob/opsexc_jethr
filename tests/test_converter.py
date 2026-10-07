@@ -36,7 +36,9 @@ class ConverterTests(unittest.TestCase):
         self.assertEqual((result.input_rows, result.converted_rows, result.output_rows), (21, 16, 14))
         self.assertEqual(len(result.issues), 5)
         self.assertEqual(result.issues[0].row, 8)
-        self.assertIn("dipendente non trovato", result.issues[0].detail)
+        self.assertEqual(result.issues[0].person, "Alessia Fumagalli")
+        self.assertEqual(result.issues[0].fiscal_code, "FMGLSS92S52G273A")
+        self.assertEqual(result.issues[0].detail, "Dipendente non trovato per questa ditta")
         noemi_issues = [issue for issue in result.issues if issue.person == "Noemi La Rocca"]
         self.assertEqual([issue.row for issue in noemi_issues], [10, 13, 15, 25])
         self.assertTrue(all(issue.detail == "Dipendente duplicato in due aziende (4012,4175)" for issue in noemi_issues))
@@ -65,6 +67,14 @@ class ConverterTests(unittest.TestCase):
         b = sample("B")
         self.assertTrue(any("X71133" in issue.detail for issue in b.issues))
         self.assertEqual(b.output_rows, 6)
+
+    def test_issue_names_and_descriptions_have_consistent_case(self):
+        b = sample("B")
+        self.assertEqual([issue.person for issue in b.issues], ["Sofia Marini"] * 3 + ["Laura De Santis"])
+        self.assertTrue(all(issue.detail[:1].isupper() for issue in b.issues))
+        self.assertTrue(all(issue.fiscal_code == "Non disponibile" for issue in b.issues[:3]))
+        self.assertEqual(b.issues[3].detail, "Voce welfare non mappata: X71133")
+        self.assertEqual(sample("E").issues[0].person, "Paolo Guerra")
 
     def test_company_scope_and_tax_spelling(self):
         company, filename = CASES["A"]
@@ -96,6 +106,8 @@ class ConverterTests(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json["output_rows"], 14)
             self.assertEqual(len(response.json["issues"]), 5)
+            self.assertEqual(response.json["issues"][1]["person"], "Noemi La Rocca")
+            self.assertEqual(response.json["issues"][1]["fiscal_code"], "LRCNMO75P50H501M")
             self.assertEqual(response.json["filename"], "VOCI_4012_202609.txt")
             invalid = client.post("/api/convert", data={"provider": "A"})
             self.assertEqual(invalid.status_code, 400)

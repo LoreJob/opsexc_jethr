@@ -43,10 +43,11 @@ class Movement:
 class Issue:
     row: int
     person: str
+    fiscal_code: str
     detail: str
 
     def as_dict(self) -> dict:
-        return {"row": self.row, "person": self.person, "detail": self.detail}
+        return {"row": self.row, "person": self.person, "fiscal_code": self.fiscal_code, "detail": self.detail}
 
 
 @dataclass(frozen=True)
@@ -85,6 +86,14 @@ def _name_key(value: object) -> str:
 
 def _text(value: object) -> str:
     return str(value).strip() if value is not None else ""
+
+
+def _issue_name(value: str) -> str:
+    return " ".join(value.split()).title() if value.strip() else "—"
+
+
+def _issue_detail(problems: list[str]) -> str:
+    return "; ".join(problem[:1].upper() + problem[1:] for problem in problems)
 
 
 def _date_period(value: object) -> str:
@@ -294,6 +303,15 @@ class EmployeeLookup:
             raise ValueError("corrispondenza dipendente ambigua")
         return next(iter(codes))
 
+    def fiscal_code_for_issue(self, movement: Movement, employee: str | None) -> str:
+        if movement.fiscal_code:
+            return movement.fiscal_code.strip().upper()
+        if employee is not None:
+            fiscal_codes = self.fiscal_codes_by_employee[employee]
+            if len(fiscal_codes) == 1:
+                return next(iter(fiscal_codes))
+        return "Non disponibile"
+
     def cross_company_error(self, movement: Movement, employee: str) -> str | None:
         fiscal_codes = self.fiscal_codes_by_employee[employee]
         if movement.fiscal_code:
@@ -405,7 +423,7 @@ def convert(provider: str, company: str, period: str, filename: str, data: bytes
         if employee is not None:
             duplicate_error = employees.cross_company_error(movement, employee)
             if duplicate_error:
-                issues.append(Issue(movement.row, movement.display_name or "—", duplicate_error))
+                issues.append(Issue(movement.row, _issue_name(movement.display_name), employees.fiscal_code_for_issue(movement, employee), duplicate_error))
                 continue
         try:
             voice = welfare.find(movement)
@@ -418,7 +436,7 @@ def convert(provider: str, company: str, period: str, filename: str, data: bytes
             problems.append(str(exc))
             cents = None
         if problems:
-            issues.append(Issue(movement.row, movement.display_name or "—", "; ".join(problems)))
+            issues.append(Issue(movement.row, _issue_name(movement.display_name), employees.fiscal_code_for_issue(movement, employee), _issue_detail(problems)))
             continue
         totals[(employee, voice)] += cents
         converted_rows += 1
