@@ -25,23 +25,23 @@ def sample(provider):
 
 
 class ConverterTests(unittest.TestCase):
-    def test_provider_a_excludes_employee_missing_from_anagrafica(self):
+    def test_provider_a_converts_employee_in_multiple_companies_with_warning(self):
         result = sample("A")
         expected = (ROOT / "Kit Candidato" / "esempio_output" / "ESEMPIO_VOCI_4012_202609.txt").read_bytes()
-        expected_without_unlisted_or_duplicated_employee = b"".join(
+        expected_without_unlisted_employee = b"".join(
             record for record in expected.splitlines(keepends=True)
-            if record[6:12].strip() not in (b"25", b"10")
+            if record[6:12].strip() != b"25"
         )
-        self.assertEqual(result.content.encode("ascii"), expected_without_unlisted_or_duplicated_employee)
-        self.assertEqual((result.input_rows, result.converted_rows, result.output_rows), (21, 16, 14))
-        self.assertEqual(len(result.issues), 5)
+        self.assertEqual(result.content.encode("ascii"), expected_without_unlisted_employee)
+        self.assertEqual((result.input_rows, result.converted_rows, result.output_rows), (21, 20, 18))
+        self.assertEqual(len(result.issues), 1)
         self.assertEqual(result.issues[0].row, 8)
         self.assertEqual(result.issues[0].person, "Alessia Fumagalli")
         self.assertEqual(result.issues[0].fiscal_code, "FMGLSS92S52G273A")
         self.assertEqual(result.issues[0].detail, "Dipendente non trovato per questa ditta")
-        noemi_issues = [issue for issue in result.issues if issue.person == "Noemi La Rocca"]
-        self.assertEqual([issue.row for issue in noemi_issues], [10, 13, 15, 25])
-        self.assertTrue(all(issue.detail == "Dipendente duplicato in due aziende (4012,4175)" for issue in noemi_issues))
+        self.assertEqual([warning.row for warning in result.warnings], [10, 13, 15, 25])
+        self.assertTrue(all(warning.person == "Noemi La Rocca" and warning.fiscal_code == "LRCNMO75P50H501M" for warning in result.warnings))
+        self.assertTrue(all(warning.detail == "Dipendente presente in più aziende (4012, 4175); usato il codice 10 della ditta 4012" for warning in result.warnings))
 
     def test_all_providers_use_the_same_fixed_width_output(self):
         for provider in CASES:
@@ -54,13 +54,14 @@ class ConverterTests(unittest.TestCase):
                 self.assertEqual(keys, sorted(keys))
                 self.assertEqual(len(keys), len(set(keys)))
                 self.assertEqual(result.input_rows, result.converted_rows + len(result.issues))
+                self.assertTrue(all(warning.row not in {issue.row for issue in result.issues} for warning in result.warnings))
 
     def test_provider_specific_decisions(self):
         c_records = sample("C").content.splitlines()
         self.assertIn("00404120    194 0000000000031210202609", c_records)
         d_records = sample("D").content.splitlines()
         self.assertIn("00409338    373 0000000000075181202609", d_records)
-        self.assertTrue(any(issue.person == "Laura Ferrari Galli" and issue.detail == "Dipendente duplicato in due aziende (4093,4175)" for issue in sample("D").issues))
+        self.assertTrue(any(warning.person == "Laura Ferrari Galli" and warning.detail == "Dipendente presente in più aziende (4093, 4175); usato il codice 16 della ditta 4093" for warning in sample("D").warnings))
         e_records = sample("E").content.splitlines()
         self.assertIn("00413115000 371 0000000000009594202609", e_records)
         self.assertIn("00413115039 370 0000000000036800202609", e_records)
@@ -80,10 +81,11 @@ class ConverterTests(unittest.TestCase):
         company, filename = CASES["A"]
         data = (INPUT / filename).read_bytes()
         other_company = convert("A", "4175", "202609", filename, data)
-        self.assertEqual(other_company.converted_rows, 0)
-        self.assertEqual(other_company.output_rows, 0)
-        self.assertEqual(len(other_company.issues), 21)
-        self.assertEqual(sum(issue.person == "Noemi La Rocca" for issue in other_company.issues), 4)
+        self.assertEqual(other_company.converted_rows, 4)
+        self.assertEqual(other_company.output_rows, 4)
+        self.assertEqual(len(other_company.issues), 17)
+        self.assertEqual([warning.row for warning in other_company.warnings], [10, 13, 15, 25])
+        self.assertTrue(all(record[6:12].strip() == "900" for record in other_company.content.splitlines()))
 
         lookup = WelfareLookup()
         for spelling in ("Benefit art.51 c.2 let f-bis", "BENEFIT ART.51 C.2 LETT F.B", "Benefit art.51 c.2 lett f-b"):
@@ -104,10 +106,11 @@ class ConverterTests(unittest.TestCase):
                 "file": (io.BytesIO(data), filename),
             })
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.json["output_rows"], 14)
-            self.assertEqual(len(response.json["issues"]), 5)
-            self.assertEqual(response.json["issues"][1]["person"], "Noemi La Rocca")
-            self.assertEqual(response.json["issues"][1]["fiscal_code"], "LRCNMO75P50H501M")
+            self.assertEqual(response.json["output_rows"], 18)
+            self.assertEqual(len(response.json["issues"]), 1)
+            self.assertEqual(len(response.json["warnings"]), 4)
+            self.assertEqual(response.json["warnings"][0]["person"], "Noemi La Rocca")
+            self.assertEqual(response.json["warnings"][0]["fiscal_code"], "LRCNMO75P50H501M")
             self.assertEqual(response.json["filename"], "VOCI_4012_202609.txt")
             invalid = client.post("/api/convert", data={"provider": "A"})
             self.assertEqual(invalid.status_code, 400)

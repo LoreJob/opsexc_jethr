@@ -58,6 +58,7 @@ class ConversionResult:
     converted_rows: int
     output_rows: int
     issues: list[Issue]
+    warnings: list[Issue]
 
 
 def _key(value: object) -> str:
@@ -270,6 +271,7 @@ def _amount_cents(value: object) -> int:
 
 class EmployeeLookup:
     def __init__(self, company: str):
+        self.company = company
         self.by_fiscal_code: dict[str, set[str]] = defaultdict(set)
         self.by_name: dict[str, set[str]] = defaultdict(set)
         self.fiscal_codes_by_employee: dict[str, set[str]] = defaultdict(set)
@@ -312,7 +314,7 @@ class EmployeeLookup:
                 return next(iter(fiscal_codes))
         return "Non disponibile"
 
-    def cross_company_error(self, movement: Movement, employee: str) -> str | None:
+    def cross_company_warning(self, movement: Movement, employee: str) -> str | None:
         fiscal_codes = self.fiscal_codes_by_employee[employee]
         if movement.fiscal_code:
             fiscal_code = movement.fiscal_code.upper()
@@ -325,8 +327,10 @@ class EmployeeLookup:
         companies = sorted(self.companies_by_fiscal_code[fiscal_code], key=int)
         if len(companies) < 2:
             return None
-        label = "due aziende" if len(companies) == 2 else "più aziende"
-        return f"Dipendente duplicato in {label} ({','.join(companies)})"
+        return (
+            f"Dipendente presente in più aziende ({', '.join(companies)}); "
+            f"usato il codice {employee} della ditta {self.company}"
+        )
 
 
 class WelfareLookup:
@@ -412,6 +416,7 @@ def convert(provider: str, company: str, period: str, filename: str, data: bytes
     _validate_period(movements, period)
     totals: dict[tuple[str, str], int] = defaultdict(int)
     issues: list[Issue] = []
+    warnings: list[Issue] = []
     converted_rows = 0
     for movement in movements:
         problems = []
@@ -420,11 +425,6 @@ def convert(provider: str, company: str, period: str, filename: str, data: bytes
         except ValueError as exc:
             problems.append(str(exc))
             employee = None
-        if employee is not None:
-            duplicate_error = employees.cross_company_error(movement, employee)
-            if duplicate_error:
-                issues.append(Issue(movement.row, _issue_name(movement.display_name), employees.fiscal_code_for_issue(movement, employee), duplicate_error))
-                continue
         try:
             voice = welfare.find(movement)
         except ValueError as exc:
@@ -438,9 +438,12 @@ def convert(provider: str, company: str, period: str, filename: str, data: bytes
         if problems:
             issues.append(Issue(movement.row, _issue_name(movement.display_name), employees.fiscal_code_for_issue(movement, employee), _issue_detail(problems)))
             continue
+        duplicate_warning = employees.cross_company_warning(movement, employee)
+        if duplicate_warning:
+            warnings.append(Issue(movement.row, _issue_name(movement.display_name), employees.fiscal_code_for_issue(movement, employee), duplicate_warning))
         totals[(employee, voice)] += cents
         converted_rows += 1
 
     records = [_record(company, employee, voice, cents, period) for (employee, voice), cents in sorted(totals.items(), key=lambda item: (int(item[0][0]), item[0][1]))]
     content = "\r\n".join(records) + ("\r\n" if records else "")
-    return ConversionResult(f"VOCI_{company}_{period}.txt", content, len(movements), converted_rows, len(records), issues)
+    return ConversionResult(f"VOCI_{company}_{period}.txt", content, len(movements), converted_rows, len(records), issues, warnings)

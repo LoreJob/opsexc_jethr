@@ -14,6 +14,6 @@ Il tool trasforma i report welfare di cinque provider, in formato Excel o CSV, i
 
 Per ogni movimento, il convertitore cerca il dipendente nell'anagrafica fornita e associa il trattamento welfare alla voce paghe corretta. Verifica la data e l'importo, poi somma i movimenti per dipendente e voce. Il TXT finale contiene un record per ogni coppia dipendente/voce.
 
-Le righe non riconciliabili vengono escluse dal TXT e mostrate tra gli errori, scaricabili anche in CSV. Se le date del file non corrispondono al periodo selezionato, la conversione si interrompe con un messaggio esplicativo.
+Le righe non riconciliabili vengono escluse dal TXT e mostrate tra gli errori, scaricabili anche in CSV. Se un dipendente compare in più aziende, viene usato il codice della ditta selezionata e la riga convertita compare tra gli avvisi. Se le date del file non corrispondono al periodo selezionato, la conversione si interrompe con un messaggio esplicativo.
 
 La versione online esegue la conversione nel browser: i file caricati non vengono inviati a un server.

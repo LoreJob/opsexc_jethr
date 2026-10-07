@@ -98,10 +98,15 @@ function showResult(result) {
 
   const banner = document.getElementById('status-banner');
   const hasIssues = result.issues.length > 0;
-  banner.className = `status-banner ${hasIssues ? 'partial' : 'complete'}`;
-  banner.textContent = hasIssues
-    ? `Conversione con errori: ${result.issues.length} ${result.issues.length === 1 ? 'riga esclusa' : 'righe escluse'}. Il TXT contiene solo i movimenti validi. Controlla gli errori qui sotto.`
-    : 'Conversione completata: tutti i movimenti sono stati elaborati.';
+  const hasWarnings = result.warnings.length > 0;
+  banner.className = `status-banner ${hasIssues ? 'partial' : hasWarnings ? 'attention' : 'complete'}`;
+  if (hasIssues) {
+    banner.textContent = `Conversione con errori: ${result.issues.length} ${result.issues.length === 1 ? 'riga esclusa' : 'righe escluse'}. Il TXT contiene solo i movimenti validi.${hasWarnings ? ` ${result.warnings.length} ${result.warnings.length === 1 ? 'avviso su una riga convertita' : 'avvisi su righe convertite'}.` : ''} Controlla le segnalazioni qui sotto.`;
+  } else if (hasWarnings) {
+    banner.textContent = `Conversione completata con ${result.warnings.length} ${result.warnings.length === 1 ? 'avviso' : 'avvisi'}. Il TXT include anche queste righe: controlla i dipendenti presenti in più aziende.`;
+  } else {
+    banner.textContent = 'Conversione completata: tutti i movimenti sono stati elaborati.';
+  }
 
   const downloadButton = document.getElementById('download-button');
   downloadButton.disabled = result.output_rows === 0;
@@ -110,6 +115,10 @@ function showResult(result) {
   issuesSection.classList.toggle('hidden', !hasIssues);
   document.getElementById('issues-count').textContent = hasIssues ? result.issues.length : '';
   renderRows(document.getElementById('issues-body'), result.issues);
+  const warningsSection = document.getElementById('warnings-section');
+  warningsSection.classList.toggle('hidden', !hasWarnings);
+  document.getElementById('warnings-count').textContent = hasWarnings ? result.warnings.length : '';
+  renderRows(document.getElementById('warnings-body'), result.warnings);
 }
 
 async function convertInBrowser(formData) {
@@ -181,9 +190,16 @@ document.getElementById('download-button').addEventListener('click', () => {
   if (latestResult?.output_rows) downloadBlob(latestResult.content, latestResult.filename, 'text/plain;charset=us-ascii');
 });
 
+function downloadReport(rows, prefix, detailHeader) {
+  const report = [['Riga', 'Dipendente', 'Codice fiscale', detailHeader], ...rows.map(row => [row.row, row.person, row.fiscal_code, row.detail])];
+  const content = '\uFEFF' + report.map(row => row.map(csvCell).join(';')).join('\r\n') + '\r\n';
+  downloadBlob(content, latestResult.filename.replace('VOCI_', `${prefix}_`).replace('.txt', '.csv'), 'text/csv;charset=utf-8');
+}
+
 document.getElementById('issues-download').addEventListener('click', () => {
-  if (!latestResult?.issues.length) return;
-  const rows = [['Riga', 'Dipendente', 'Codice fiscale', 'Problema'], ...latestResult.issues.map(issue => [issue.row, issue.person, issue.fiscal_code, issue.detail])];
-  const content = '\uFEFF' + rows.map(row => row.map(csvCell).join(';')).join('\r\n') + '\r\n';
-  downloadBlob(content, latestResult.filename.replace('VOCI_', 'SCARTI_').replace('.txt', '.csv'), 'text/csv;charset=utf-8');
+  if (latestResult?.issues.length) downloadReport(latestResult.issues, 'SCARTI', 'Problema');
+});
+
+document.getElementById('warnings-download').addEventListener('click', () => {
+  if (latestResult?.warnings.length) downloadReport(latestResult.warnings, 'AVVISI', 'Segnalazione');
 });
