@@ -38,7 +38,7 @@ class ConverterTests(unittest.TestCase):
         self.assertEqual(result.issues[0].row, 8)
         self.assertEqual(result.issues[0].person, "Alessia Fumagalli")
         self.assertEqual(result.issues[0].fiscal_code, "FMGLSS92S52G273A")
-        self.assertEqual(result.issues[0].detail, "Dipendente non trovato per questa ditta")
+        self.assertEqual(result.issues[0].detail, "Dipendente non trovato")
         self.assertEqual([warning.row for warning in result.warnings], [10, 13, 15, 25])
         self.assertTrue(all(warning.person == "Noemi La Rocca" and warning.fiscal_code == "LRCNMO75P50H501M" for warning in result.warnings))
         self.assertTrue(all(warning.detail == "Dipendente presente in più aziende (4012, 4175); usato il codice 10 della ditta 4012" for warning in result.warnings))

@@ -300,7 +300,7 @@ class EmployeeLookup:
             }
             codes = set().union(*(self.by_name.get(candidate, set()) for candidate in candidates))
         if not codes:
-            raise ValueError("dipendente non trovato per questa ditta")
+            raise ValueError("dipendente non trovato")
         if len(codes) != 1:
             raise ValueError("corrispondenza dipendente ambigua")
         return next(iter(codes))
