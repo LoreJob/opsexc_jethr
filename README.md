@@ -1,5 +1,7 @@
 # Convertitore welfare → voci paghe
 
+**[Apri il convertitore online](https://lorejob.github.io/opsexc_jethr/)**
+
 Soluzione locale al case study Ops Excellence in `description.md`. Legge gli export dei cinque provider del kit, riconcilia dipendenti e trattamenti con i CSV forniti e genera `VOCI_<ditta>_<AAAAMM>.txt`.
 
 ## Avvio locale
