@@ -121,7 +121,6 @@ h2 { margin-bottom: 0; color: var(--ink); font-size: 23px; font-weight: 700; let
 .status-banner { padding: 14px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; line-height: 1.5; }
 .status-banner.complete { color: #2d5e25; background: #e9f5df; }
 .status-banner.partial { color: #923b2d; background: #fff0eb; }
-.status-banner.warning { color: #6d5300; background: #fff5d9; }
 .metrics { display: grid; grid-template-columns: repeat(3, 1fr); margin: 25px 0; overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
 .metrics > div { min-width: 0; padding: 15px 9px 16px; text-align: center; }
 .metrics > div + div { border-left: 1px solid var(--line); }
@@ -139,8 +138,6 @@ h2 { margin-bottom: 0; color: var(--ink); font-size: 23px; font-weight: 700; let
 .issues-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; }
 .issues-heading h3 { margin: 0; color: var(--ink); font-size: 14px; letter-spacing: -.02em; }
 .issues-heading h3 span { color: #a64536; }
-.warnings-section .issues-heading h3 span { color: #8c6a00; }
-.warnings-note { margin: 0 0 10px; color: var(--ink-soft); font-size: 11px; line-height: 1.5; }
 .issues-heading button { padding: 2px; color: var(--ink); background: transparent; border: 0; font-size: 11px; font-weight: 700; white-space: nowrap; text-decoration: underline; text-underline-offset: 2px; }
 .issues-table-wrap { max-height: 223px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
 table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; }

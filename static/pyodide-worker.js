@@ -52,7 +52,6 @@ try:
         'converted_rows': result.converted_rows,
         'output_rows': result.output_rows,
         'issues': [issue.as_dict() for issue in result.issues],
-        'warnings': [warning.as_dict() for warning in result.warnings],
     }
 except ConversionError as exc:
     payload = {'error': str(exc)}

@@ -91,15 +91,10 @@ function showResult(result) {
 
   const banner = document.getElementById('status-banner');
   const hasIssues = result.issues.length > 0;
-  const warnings = result.warnings || [];
-  const hasWarnings = warnings.length > 0;
-  banner.className = `status-banner ${hasIssues ? 'partial' : hasWarnings ? 'warning' : 'complete'}`;
-  const warningSummary = hasWarnings
-    ? ` ${warnings.length} ${warnings.length === 1 ? 'dipendente presente' : 'dipendenti presenti'} in più ditte: verifica le segnalazioni qui sotto.`
-    : '';
-  banner.textContent = (hasIssues
+  banner.className = `status-banner ${hasIssues ? 'partial' : 'complete'}`;
+  banner.textContent = hasIssues
     ? `Conversione con errori: ${result.issues.length} ${result.issues.length === 1 ? 'riga esclusa' : 'righe escluse'}. Il TXT contiene solo i movimenti validi. Controlla gli errori qui sotto.`
-    : 'Conversione completata: tutti i movimenti sono stati elaborati.') + warningSummary;
+    : 'Conversione completata: tutti i movimenti sono stati elaborati.';
 
   const downloadButton = document.getElementById('download-button');
   downloadButton.disabled = result.output_rows === 0;
@@ -108,9 +103,6 @@ function showResult(result) {
   issuesSection.classList.toggle('hidden', !hasIssues);
   document.getElementById('issues-count').textContent = hasIssues ? result.issues.length : '';
   renderRows(document.getElementById('issues-body'), result.issues);
-  document.getElementById('warnings-section').classList.toggle('hidden', !hasWarnings);
-  document.getElementById('warnings-count').textContent = hasWarnings ? warnings.length : '';
-  renderRows(document.getElementById('warnings-body'), warnings);
 }
 
 async function convertInBrowser(formData) {
