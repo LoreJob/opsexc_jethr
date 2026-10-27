@@ -16,6 +16,7 @@ CASES = {
     "C": ("4041", "ProviderC_Erogazioni_fatt_031900.xls"),
     "D": ("4093", "ProviderD_tracciato_set26.csv"),
     "E": ("4131", "ProviderE_welfare_settembre_2026.xlsx"),
+    "F": ("4093", "ProviderF_ReportWelfare_202609.csv")
 }
 
 
@@ -65,6 +66,13 @@ class ConverterTests(unittest.TestCase):
         e_records = sample("E").content.splitlines()
         self.assertIn("00413115000 371 0000000000009594202609", e_records)
         self.assertIn("00413115039 370 0000000000036800202609", e_records)
+        f = sample("F")
+        self.assertEqual(f.content, sample("D").content)
+        self.assertEqual((f.input_rows, f.converted_rows, f.output_rows), (17, 16, 12))
+        self.assertEqual(len(f.issues), 1)
+        self.assertEqual((f.issues[0].row, f.issues[0].person, f.issues[0].fiscal_code, f.issues[0].detail), (12, "Matteo Martini", "MRTMTT70S02E506Z", "Dipendente non trovato"))
+        self.assertEqual(len(f.warnings), 1)
+        self.assertEqual((f.warnings[0].row, f.warnings[0].person, f.warnings[0].fiscal_code, f.warnings[0].detail), (9, "Laura Ferrari Galli", "FRRLRA72A57G273R", "Dipendente presente in più aziende (4093, 4175); usato il codice 16 della ditta 4093"))
         b = sample("B")
         self.assertTrue(any("X71133" in issue.detail for issue in b.issues))
         self.assertEqual(b.output_rows, 6)

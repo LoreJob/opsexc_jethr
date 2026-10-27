@@ -1,4 +1,4 @@
-"""Convert the five provider exports into Jet HR's fixed-width payroll format."""
+"""Convert the six provider exports into Jet HR's fixed-width payroll format."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from openpyxl import load_workbook
 
 ROOT = Path(__file__).resolve().parent
 CONFIG_DIR = ROOT / "Kit Candidato" / "config"
-PROVIDER_EXTENSIONS = {"A": ".xlsx", "B": ".csv", "C": ".xls", "D": ".csv", "E": ".xlsx"}
+PROVIDER_EXTENSIONS = {"A": ".xlsx", "B": ".csv", "C": ".xls", "D": ".csv", "E": ".xlsx", "F": ".csv"}
 
 
 class ConversionError(ValueError):
@@ -237,6 +237,29 @@ def _parse_provider(provider: str, data: bytes) -> list[Movement]:
         rows = _xlsx_rows(data, {"Codice Fiscale Dipendente", "Articolo", "Totale", "Data"})
         for number, row in rows:
             movements.append(Movement(number, _text(row["Codice Fiscale Dipendente"]), f"{_text(row['Nome'])} {_text(row['Cognome'])}".strip(), "", "", _text(row["Articolo"]), "", row["Totale"], row["Data"]))
+    elif provider == "F":
+        rows = _csv_rows(data, {"Importo erogato", "CF lavoratore", "Trattamento fiscale", "Data operazione"})
+        for number, row in rows:
+            fiscal_code = _text(row["CF lavoratore"])
+            beneficiary_cf = _text(row.get("CF beneficiario"))
+            relationship = _key(row.get("Relazione beneficiario"))
+            given = _text(row.get("Nome beneficiario"))
+            surname = _text(row.get("Cognome beneficiario"))
+            is_worker = relationship == "me stesso" or (fiscal_code and beneficiary_cf and fiscal_code.upper() == beneficiary_cf.upper())
+            display_name = f"{given} {surname}".strip() if is_worker else ""
+            movements.append(
+                Movement(
+                    number,
+                    fiscal_code,
+                    display_name,
+                    given if is_worker else "",
+                    surname if is_worker else "",
+                    _text(row["Trattamento fiscale"]),
+                    _text(row.get("Servizio welfare")),
+                    row["Importo erogato"],
+                    row["Data operazione"],
+                )
+            )
     else:
         raise ConversionError("Provider non riconosciuto.")
     if not movements:
@@ -275,18 +298,23 @@ class EmployeeLookup:
         self.by_fiscal_code: dict[str, set[str]] = defaultdict(set)
         self.by_name: dict[str, set[str]] = defaultdict(set)
         self.fiscal_codes_by_employee: dict[str, set[str]] = defaultdict(set)
+        self.names_by_employee: dict[str, str] = {}
+        self.names_by_fiscal_code: dict[str, str] = {}
         self.companies_by_fiscal_code: dict[str, set[str]] = defaultdict(set)
         with (CONFIG_DIR / "Lista_Dipendenti.csv").open(newline="", encoding="utf-8-sig") as file:
             for row in csv.DictReader(file):
                 row_company = row["Codice Ditta"].strip()
                 code = row["CodAnagraficoLav"].strip()
                 fiscal_code = row["CodiceFiscale"].strip().upper()
+                employee_name = row["Nome Dipendente"].strip()
                 self.companies_by_fiscal_code[fiscal_code].add(row_company)
+                self.names_by_fiscal_code.setdefault(fiscal_code, employee_name)
                 if row_company != company:
                     continue
                 self.by_fiscal_code[fiscal_code].add(code)
-                self.by_name[_name_key(row["Nome Dipendente"])].add(code)
+                self.by_name[_name_key(employee_name)].add(code)
                 self.fiscal_codes_by_employee[code].add(fiscal_code)
+                self.names_by_employee.setdefault(code, employee_name)
         if not self.by_fiscal_code:
             raise ConversionError(f"Ditta {company} non presente nell'anagrafica fornita.")
 
@@ -304,6 +332,17 @@ class EmployeeLookup:
         if len(codes) != 1:
             raise ValueError("corrispondenza dipendente ambigua")
         return next(iter(codes))
+
+    def person_for_issue(self, movement: Movement, employee: str | None) -> str:
+        if movement.display_name.strip():
+            return _issue_name(movement.display_name)
+        if employee is not None and employee in self.names_by_employee:
+            return _issue_name(self.names_by_employee[employee])
+        if movement.fiscal_code:
+            name = self.names_by_fiscal_code.get(movement.fiscal_code.strip().upper(), "")
+            if name:
+                return _issue_name(name)
+        return "—"
 
     def fiscal_code_for_issue(self, movement: Movement, employee: str | None) -> str:
         if movement.fiscal_code:
@@ -436,11 +475,11 @@ def convert(provider: str, company: str, period: str, filename: str, data: bytes
             problems.append(str(exc))
             cents = None
         if problems:
-            issues.append(Issue(movement.row, _issue_name(movement.display_name), employees.fiscal_code_for_issue(movement, employee), _issue_detail(problems)))
+            issues.append(Issue(movement.row, employees.person_for_issue(movement, employee), employees.fiscal_code_for_issue(movement, employee), _issue_detail(problems)))
             continue
         duplicate_warning = employees.cross_company_warning(movement, employee)
         if duplicate_warning:
-            warnings.append(Issue(movement.row, _issue_name(movement.display_name), employees.fiscal_code_for_issue(movement, employee), duplicate_warning))
+            warnings.append(Issue(movement.row, employees.person_for_issue(movement, employee), employees.fiscal_code_for_issue(movement, employee), duplicate_warning))
         totals[(employee, voice)] += cents
         converted_rows += 1
 

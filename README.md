@@ -2,7 +2,7 @@
 
 **[Apri il convertitore online](https://lorejob.github.io/opsexc_jethr/)**
 
-Il tool trasforma i report welfare di cinque provider, in formato Excel o CSV, in un file di voci paghe pronto per l'import nel gestionale.
+Il tool trasforma i report welfare di sei provider, in formato Excel o CSV, in un file di voci paghe pronto per l'import nel gestionale.
 
 ## Come si usa
 
